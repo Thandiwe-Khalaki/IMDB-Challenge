@@ -12,7 +12,7 @@ parser.add_argument("--table", type=str)
 parser.add_argument("--year", type=int)
 parser.add_argument("--movie", type=str)
 parser.add_argument(
-    "--query", choices=("top_10_movies", "longest_movies", "find_movie")
+    "--query", choices=("top_10_movies", "top_10_actors","longest_movie", "find_movie",'year',"gross_year")
 )
 
 args = parser.parse_args()
@@ -20,11 +20,11 @@ args = parser.parse_args()
 
 class Database:
     def __init__(self):
-        self.database_name = args.database
+        self.database_name = args.database +'.db'
         self.conn = sq.connect(args.database)
         self.c = self.conn.cursor()
 
-    def create_table(self, table):
+    def create_table(self):
         try:
             self.c.execute(
                 f"""CREATE TABLE IF NOT EXISTS {args.table} (Poster_Link TEXT,Series_Title TEXT, Released_Year TEXT, \
@@ -48,8 +48,8 @@ class Database:
     def top_10_movies(self):
         print(
             self.c.execute(
-                """SELECT Series_Title, IMDB_Rating
-            FROM movies
+                f"""SELECT Series_Title, IMDB_Rating
+            FROM {args.table}
             ORDER BY IMDB_Rating DESC
             LIMIT 10 ;"""
             ).fetchall()
@@ -58,8 +58,8 @@ class Database:
     def top_10_actors(self):
         print(
             self.c.execute(
-                """SELECT Star1, round(AVG(IMDB_Rating),2) as avg_rating
-            FROM movies
+                f"""SELECT Star1, round(AVG(IMDB_Rating),2) as avg_rating
+            FROM {args.table}
             GROUP BY Star1
             ORDER BY avg_rating DESC
             LIMIT 10;"""
@@ -70,26 +70,26 @@ class Database:
         print(
             self.c.execute(
                 f"""SELECT Series_Title, IMDB_Rating
-            FROM movie
+            FROM {args.table}
             WHERE Released_Year = {args.year}
             ORDER BY IMDB_Rating DESC"""
             ).fetchall()
         )
 
-    def longest_movie(self, year):
+    def longest_movie(self):
         print(
             self.c.execute(
                 f"""SELECT Series_Title, MAX(Runtime)/60 as hrs
-            FROM movies
-            WHERE Released_Year = {args.year} """
+            FROM {args.table}
+            WHERE Released_Year = {args.year}"""
             ).fetchall()
         )
 
     def gross_year(self):
         print(
             self.c.execute(
-                """SELECT Released_Year, AVG(max_cross)
-            FROM (select Released_Year, max(Gross) as max_cross from movies group by Released_Year) """
+                f"""SELECT Released_Year, AVG(max_cross)
+            FROM (select Released_Year, max(Gross) as max_cross from {args.table} group by Released_Year) """
             ).fetchall()
         )
 
@@ -97,8 +97,8 @@ class Database:
         print(
             self.c.execute(
                 f"""SELECT Series_Title, IMDB_Rating
-            FROM movies
-            WHERE Series_Title = {args.movie}
+            FROM {args.table}
+            WHERE Series_Title == {args.movie}
             ORDER BY IMDB_Rating"""
             ).fetchall()
         )
@@ -108,9 +108,9 @@ if __name__ == "__main__":
     imbd = Database()
     imbd.create_table()
     imbd.load_csv()
-    imbd.top_ten_movies()
-    imbd.top_ten_actors()
-    imbd.year()
-    imbd.longest_movie(1920)
-    imbd.gross_year()
+    # imbd.top_10_movies()
+    # imbd.top_10_actors()
+    # imbd.year()
+    # imbd.longest_movie()
+    # imbd.gross_year()
     imbd.find_movie()
